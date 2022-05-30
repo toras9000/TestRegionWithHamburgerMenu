@@ -1,12 +1,19 @@
-﻿using Prism.Mvvm;
+﻿using System;
+using Prism.Mvvm;
+using Prism.Regions;
+using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 
-namespace TestRegionWithHamburgerMenu.ViewModels
+namespace TestRegionWithHamburgerMenu.ViewModels;
+
+public class MainWindowViewModel : AppVmBase
 {
-    public class MainWindowViewModel : BindableBase
+    public MainWindowViewModel(IRegionManager regionManager)
     {
-        public MainWindowViewModel()
-        {
-
-        }
+        this.ChangeContentCommand = new ReactiveCommand<string>()
+            .WithSubscribe(v => regionManager.RequestNavigate("MainContentRegion", v), o => o.AddTo(this.Disposables))
+            .AddTo(this.Disposables);
     }
+
+    public ReactiveCommand<string> ChangeContentCommand { get; }
 }

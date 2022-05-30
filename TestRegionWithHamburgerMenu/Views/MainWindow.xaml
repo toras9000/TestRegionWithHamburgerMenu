@@ -4,9 +4,57 @@
         xmlns:prism="http://prismlibrary.com/"
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:modules="clr-namespace:TestRegionWithHamburgerMenu.Modules"
+        xmlns:local="clr-namespace:TestRegionWithHamburgerMenu.Views"
         Title="TestRegionWithHamburgerMenu"
         Width="525" Height="350">
-    <Grid>
-        <ContentControl prism:RegionManager.RegionName="ContentRegion" />
-    </Grid>
+
+    <mah:MetroWindow.Resources>
+        <DataTemplate x:Key="MenuItemTemplate" DataType="{x:Type mah:HamburgerMenuIconItem}">
+            <DockPanel Height="48" LastChildFill="True">
+                <Grid x:Name="IconPart" DockPanel.Dock="Left" Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type mah:HamburgerMenu}}, Path=CompactPaneLength}">
+                    <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Focusable="False" IsTabStop="False"
+                                    Content="{Binding Icon}"/>
+                </Grid>
+                <TextBlock x:Name="TextPart" VerticalAlignment="Center" FontSize="16" Text="{Binding Label}" />
+            </DockPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type mah:HamburgerMenu}}, Path=PanePlacement}" Value="Right">
+                    <Setter TargetName="IconPart" Property="DockPanel.Dock" Value="Right" />
+                    <Setter TargetName="TextPart" Property="Margin" Value="8 0 0 0" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </mah:MetroWindow.Resources>
+    <mah:HamburgerMenu x:Name="xHamburgerMenu" ItemTemplate="{StaticResource MenuItemTemplate}">
+        <mah:HamburgerMenu.ItemsSource>
+            <mah:HamburgerMenuItemCollection>
+                <mah:HamburgerMenuIconItem Label="ViewA" Icon="{icons:Material Kind=AlphaACircle, Width=24, Height=24}"
+                                           Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type mah:HamburgerMenu}}, Path=DataContext.ChangeContentCommand}"
+                                           CommandParameter="ViewA" />
+                <mah:HamburgerMenuIconItem Label="ViewB" Icon="{icons:Material Kind=AlphaBCircle, Width=24, Height=24}"
+                                           Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type mah:HamburgerMenu}}, Path=DataContext.ChangeContentCommand}"
+                                           CommandParameter="ViewB" />
+            </mah:HamburgerMenuItemCollection>
+        </mah:HamburgerMenu.ItemsSource>
+        <!--
+            この状態ではリージョン切り替えは上手く行かない。
+        
+            どうやら以下のような流れになっている模様。
+            ・Shell の初期化過程で RegionManager が Window に紐づけられる。
+            ・さらに RegionBehavior の初期設定で XAML に設定された Region の添付プロパティを元に Region と RegionManager が紐づけられる。
+              →このときは XAML の LogicalTree を親方向に辿っていって Window に紐づけられた RegionManager を見つける。
+              →ここではちゃんと紐づけが出来ているので Module 初期化時には Region に View を初期設定できる。
+            ・そしてどうやらウィンドウの表示時に Content が LogicalTree から切り離された状態となる模様？
+              →Content に ContentTemplate を適用して、テンプレート内のコントロールの配下に配置し直されるから元の LogicalTree からは外れるという形？
+            ・その後 RequestNavigate() した際に Region の情報更新が行われるが、LogicalTree で Window まで辿れないため RegionManager を見つけられず Region の紐づけを解除してしまう模様。
+              →そのため Region の View 切替えが動作しない。
+        -->
+        <mah:HamburgerMenu.Content>
+            <Grid>
+                <ContentControl prism:RegionManager.RegionName="MainContentRegion" />
+            </Grid>
+        </mah:HamburgerMenu.Content>
+    </mah:HamburgerMenu>
 </mah:MetroWindow>
