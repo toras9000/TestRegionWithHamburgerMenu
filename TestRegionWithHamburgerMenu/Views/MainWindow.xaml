@@ -39,22 +39,15 @@
             </mah:HamburgerMenuItemCollection>
         </mah:HamburgerMenu.ItemsSource>
         <!--
-            この状態ではリージョン切り替えは上手く行かない。
+            # 回避策前の状態は前のコミットを参照。
         
-            どうやら以下のような流れになっている模様。
-            ・Shell の初期化過程で RegionManager が Window に紐づけられる。
-            ・さらに RegionBehavior の初期設定で XAML に設定された Region の添付プロパティを元に Region と RegionManager が紐づけられる。
-              →このときは XAML の LogicalTree を親方向に辿っていって Window に紐づけられた RegionManager を見つける。
-              →ここではちゃんと紐づけが出来ているので Module 初期化時には Region に View を初期設定できる。
-            ・そしてどうやらウィンドウの表示時に Content が LogicalTree から切り離された状態となる模様？
-              →Content に ContentTemplate を適用して、テンプレート内のコントロールの配下に配置し直されるから元の LogicalTree からは外れるという形？
-            ・その後 RequestNavigate() した際に Region の情報更新が行われるが、LogicalTree で Window まで辿れないため RegionManager を見つけられず Region の紐づけを解除してしまう模様。
-              →そのため Region の View 切替えが動作しない。
+            Window の添付プロパティを ContentControl にも設定して RegionManager を見つけられるようにする。
+            注意点としてこれは Content を1つ固定しているから出来ることのよう。
+            ContentTemplate のテンプレート内に置くような記述だと多重登録的なエラーが出る。
         -->
         <mah:HamburgerMenu.Content>
-            <Grid>
-                <ContentControl prism:RegionManager.RegionName="MainContentRegion" />
-            </Grid>
+            <ContentControl prism:RegionManager.RegionManager="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(prism:RegionManager.RegionManager)}"
+                            prism:RegionManager.RegionName="MainContentRegion" />
         </mah:HamburgerMenu.Content>
     </mah:HamburgerMenu>
 </mah:MetroWindow>
